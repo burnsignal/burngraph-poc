@@ -1,0 +1,7 @@
+type AnonymousDeposit @entity {
+  id: ID!
+  from: Bytes! # address
+  value: BigInt! # uint256
+  name: String! # string
+  option: String! # string
+}
