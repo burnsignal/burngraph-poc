@@ -23,8 +23,9 @@ type AnonymousDeposit @entity {
 
 type QuadraticTotals @entity {
   id: ID!
+  proposal: String!
   burners: [Bytes!]
-  approve: [BigInt!]
-  decline: [BigInt!]
+  approve: BigInt!
+  decline: BigInt!
   total: BigInt!
 }

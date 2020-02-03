@@ -6,9 +6,9 @@ export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
   let transactionHash = event.transaction.hash.toHex()
   let proposalId = event.params.name.toHex()
   let entity = new AnonymousDeposit(transactionHash)
-  let proposal = QuadraticTotals.load(proposalId)
+  let quadratics = QuadraticTotals.load(proposalId)
 
-  if(proposal === null) proposal = new QuadraticTotals(proposalId)
+  if(quadratics === null) quadratics = new QuadraticTotals(proposalId)
 
   entity.timestamp = event.block.timestamp
   entity.signaller = event.params.from
@@ -17,14 +17,15 @@ export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
   entity.proposal = proposalId
   entity.save()
 
-  let burners = proposal.burners
+  let burners = quadratics.burners
   burners.push(transactionHash)
 
   let quadraticTotals = getQuadraticTotals(burners)
 
-  proposal.decline = quadraticTotals.reject
-  proposal.approve = quadraticTotals.pass
-  proposal.total = quadraticTotals.sum
-  proposal.burners = burners
-  proposal.save()
+  quadratics.decline = quadraticTotals.reject
+  quadratics.approve = quadraticTotals.pass
+  quadratics.total = quadraticTotals.sum
+  quadratics.proposal = proposalId
+  quadratics.burners = burners
+  quadratics.save()
 }
