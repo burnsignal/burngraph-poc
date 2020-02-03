@@ -1,10 +1,12 @@
 type AnonymousDeposit @entity {
   id: ID!
-  SenderAddr: Bytes! # address
-  ContriValue: BigInt! # uint256
-  PropName: String! # string
-  Choice: String! # string
+  signaller: Bytes! # address
+  proposal: String! # string
+  choice: String! # string
+  value: BigInt! # uint256
+  timestamp: BigInt!
 }
+
 type newProposalIssued @entity {
   id : ID!
   issuer : Bytes! # address
@@ -17,3 +19,10 @@ type newProposalIssued @entity {
   optionBaddr : Bytes!
 }
 
+type QuadraticTotals @entity {
+  id: ID!
+  signallers: [Bytes!]
+  approve: BigInt!
+  decline: BigInt!
+  sum: BigInt!
+}

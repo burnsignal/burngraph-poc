@@ -1,3 +1,4 @@
+
 specVersion: 0.0.1
 schema:
   file: ./schema.graphql
@@ -25,7 +26,7 @@ dataSources:
       - name: VoteOption
         kind: ethereum/contract
         network: rinkeby
-        source: 
+        source:
           abi: VoteOption
         mapping:
           kind: ethereum/events
