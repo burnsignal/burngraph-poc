@@ -13,7 +13,7 @@ export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
   let burners = proposals.burners
   burners.push(transactionHash)
 
-  let quadraticTotals = getQuadraticTotals(proposal, burners)
+  let quadraticTotals = getQuadraticTotals(burners)
 
   proposal.burners = burners
   proposal.decline = quadraticTotals.reject
@@ -25,7 +25,7 @@ export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
   entity.choice = event.params.option
   entity.value = event.params.value
   entity.proposal = proposalId
-  
+
   proposal.save()
   entity.save()
 }

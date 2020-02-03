@@ -19,6 +19,8 @@ type AnonymousDeposit @entity {
   value: BigInt!
 }
 
+# @burners = [transactionHashes]
+
 type QuadraticTotals @entity {
   id: ID!
   burners: [Bytes!]
