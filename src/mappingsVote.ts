@@ -22,10 +22,10 @@ export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
 }
 
 function getQuadraticTotals(proposal: string, hash: string): void {
-  let rejectSqrt: BigDecimal = BigDecimal.fromString("0")
-  let passSqrt: BigDecimal = BigDecimal.fromString("0")
   let quadratics = QuadraticTotal.load(proposal)
-  let totalValue: BigInt = BigInt.fromI32(0)
+  let totalValue: number = 0
+  let rejectSqrt: number = 0
+  let passSqrt: number = 0
 
   if(quadratics == null) quadratics = new QuadraticTotal(proposal)
 
@@ -42,19 +42,20 @@ function getQuadraticTotals(proposal: string, hash: string): void {
     if(burn != null){
       let value: number = Math.sqrt(legacyNumber(burn.value))
 
-      if(burn.choice !== "yes") {
-        rejectSqrt = BigDecimal.fromString(value.toString()) + rejectSqrt
-      } else {
-        passSqrt = BigDecimal.fromString(value.toString()) + passSqrt
-      }
+      if(burn.choice == "no") rejectSqrt = value + rejectSqrt
+      else if(burn.choice == "yes") passSqrt = value + passSqrt
 
-      totalValue = burn.value + totalValue
+      totalValue = legacyNumber(burn.value) + totalValue
     }
   }
 
-  quadratics.decline = rejectSqrt
-  quadratics.approve = passSqrt
-  quadratics.total = totalValue
+  let decline: string = rejectSqrt.toString()
+  let approve: string = passSqrt.toString()
+  let total: string = totalValue.toString()
+
+  quadratics.decline = decline
+  quadratics.approve = approve
   quadratics.burners = burners
+  quadratics.total = total
   quadratics.save()
 }
