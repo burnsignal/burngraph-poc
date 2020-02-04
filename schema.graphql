@@ -6,8 +6,8 @@ type newProposalIssued @entity {
   optionA: String!
   optionB: String!
   deadline: BigInt!
-  optionAaddr : Bytes!
-  optionBaddr : Bytes!
+  optionAaddr: Bytes!
+  optionBaddr: Bytes!
 }
 
 type AnonymousDeposit @entity {

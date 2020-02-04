@@ -1,24 +1,36 @@
-import { AnonymousDeposit } from "../generated/schema"
-import { BigInt, ByteArray } from "@graphprotocol/graph-ts";
+import { AnonymousDeposit as AnonymousDepositEvent } from "../generated/VoteProposalPool/templates/VoteOption/VoteOption"
+import { AnonymousDeposit, QuadraticTotals } from "../generated/schema"
+import { BigInt } from "@graphprotocol/graph-ts"
 
-export function getQuadraticTotals(burners: Array<String>): Array<BigInt> {
+export function getQuadraticTotals(event: AnonymousDepositEvent): void {
+  let quadratics = QuadraticTotals.load(event.params.name)
+
+  if(quadratics === null) quadratics = new QuadraticTotals(event.params.name)
+
+  let burners = quadratics.burners as Array<string>
   let rejectSqrt = BigInt.fromI32(0)
   let totalValue = BigInt.fromI32(0)
   let passSqrt = BigInt.fromI32(0)
 
+  burners.push(event.transaction.hash.toHex())
+
   for(var index = 0; index < burners.length; index++){
     let transactionHash = burners[index]
     let burn = AnonymousDeposit.load(transactionHash)
-    let value = Math.sqrt(burn.value.toI32())
 
     if(burn.choice === "yes") {
-      passSqrt = BigInt.fromI32(value as i32) + passSqrt
+      passSqrt = burn.value.pow(0.5) + passSqrt
     } else {
-      rejectSqrt = BigInt.fromI32(value as i32) + rejectSqrt
+      rejectSqrt = burn.value.pow(0.5) + rejectSqrt
     }
 
     totalValue = totalValue + burn.value;
   }
 
-  return [ passSqrt, rejectSqrt, totalValue]
+  quadratics.proposal = event.params.name
+  quadratics.decline = rejectSqrt
+  quadratics.approve = passSqrt
+  quadratics.total = totalValue
+  quadratics.burners = burners
+  quadratics.save()
 }
