@@ -25,14 +25,16 @@ export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
 
 function getQuadraticTotals(proposal: string, hash: string): void {
   let quadratics = QuadraticTotal.load(proposal)
-
-  if(quadratics == null) quadratics = new QuadraticTotal(proposal)
-
-  let burners = quadratics.burners as Array<string>
   let rejectSqrt = BigInt.fromI32(0)
   let totalValue = BigInt.fromI32(0)
   let passSqrt = BigInt.fromI32(0)
 
+  if(quadratics == null) quadratics = new QuadraticTotal(proposal)
+
+  let burners :string[] = quadratics.burners as Array<string>
+
+  if(burners == null) burners = new Array()
+  
   burners.push(hash)
 
   for(var index = 0; index < burners.length; index++){
