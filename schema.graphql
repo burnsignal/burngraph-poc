@@ -1,8 +1,8 @@
 type newProposalIssued @entity {
-  id : ID!
+  id: ID! # transactionHash
   name: String!
   data: String!
-  issuer : Bytes!
+  issuer: Bytes!
   optionA: String!
   optionB: String!
   deadline: BigInt!
@@ -11,18 +11,31 @@ type newProposalIssued @entity {
 }
 
 type AnonymousDeposit @entity {
-  id: ID!
+  id: ID! # transactionHash
+  signaller: Bytes! # Address
   timestamp: BigInt!
-  signaller: Bytes!
   proposal: String!
   choice: String!
   value: BigInt!
 }
 
-type QuadraticTotal @entity {
-  id: ID!
-  burners: [String!]
-  approve: String!
-  decline: String!
-  total: String!
+type Signaller @entity {
+  id: ID! # Address
+  burns: [String!] # transactionHashes
+  burned: BigInt!
+}
+
+type Proposal @entity {
+  id: ID! # AnonymousDeposit.proposal
+  burns: [String!] # transactionHashes
+  approve: Option!
+  reject: Option!
+  sum: BigInt!
+}
+
+type Option @entity {
+  id: ID! # AnonymousDeposit.proposal + @type
+  signallers: [Bytes!] # Addresses
+  contributions [BigInt!]
+  quadratics [String!]
 }
