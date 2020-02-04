@@ -1,12 +1,10 @@
 import { AnonymousDeposit as AnonymousDepositEvent } from "../generated/VoteProposalPool/templates/VoteOption/VoteOption"
 import { AnonymousDeposit, QuadraticTotal } from "../generated/schema"
-import { BigInt } from "@graphprotocol/graph-ts"
+import { BigInt, BigDecimal } from "@graphprotocol/graph-ts"
 
-let I32_MAX = "4294967295"
-
-function isI32(number: BigInt): bool {
-  let convert = number.toBigDecimal()
-  return parseInt(I32_MAX) >= parseInt(convert.toString())
+function legacyNumber(number: BigInt): number {
+  let decimal = new BigDecimal(number)
+  return parseInt(number.toString())
 }
 
 export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
@@ -24,34 +22,33 @@ export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
 }
 
 function getQuadraticTotals(proposal: string, hash: string): void {
+  let rejectSqrt: BigDecimal = BigDecimal.fromString("0")
+  let passSqrt: BigDecimal = BigDecimal.fromString("0")
   let quadratics = QuadraticTotal.load(proposal)
-  let rejectSqrt = BigInt.fromI32(0)
-  let totalValue = BigInt.fromI32(0)
-  let passSqrt = BigInt.fromI32(0)
+  let totalValue: BigInt = BigInt.fromI32(0)
 
   if(quadratics == null) quadratics = new QuadraticTotal(proposal)
 
   let burners :string[] = quadratics.burners as Array<string>
 
   if(burners == null) burners = new Array()
-  
+
   burners.push(hash)
 
   for(var index = 0; index < burners.length; index++){
     let transactionHash = burners[index] as string
     let burn = AnonymousDeposit.load(transactionHash)
-    let value = 0
 
     if(burn != null){
-      if(isI32(burn.value)) value = burn.value.toI32()
+      let value: number = Math.sqrt(legacyNumber(burn.value))
 
       if(burn.choice !== "yes") {
-        rejectSqrt = BigInt.fromI32(Math.sqrt(value) as i32) + rejectSqrt
+        rejectSqrt = BigDecimal.fromString(value.toString()) + rejectSqrt
       } else {
-        passSqrt = BigInt.fromI32(Math.sqrt(value) as i32) + passSqrt
+        passSqrt = BigDecimal.fromString(value.toString()) + passSqrt
       }
 
-      totalValue = totalValue + burn.value
+      totalValue = burn.value + totalValue
     }
   }
 
