@@ -1,5 +1,5 @@
 import { AnonymousDeposit as AnonymousDepositEvent } from "../generated/VoteProposalPool/templates/VoteOption/VoteOption"
-import { AnonymousDeposit, QuadraticTotals } from "../generated/schema"
+import { AnonymousDeposit, QuadraticTotal } from "../generated/schema"
 import { BigInt } from "@graphprotocol/graph-ts"
 
 let I32_MAX = "4294967295"
@@ -24,9 +24,9 @@ export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
 }
 
 function getQuadraticTotals(proposal: string, hash: string): void {
-  let quadratics = QuadraticTotals.load(proposal)
+  let quadratics = QuadraticTotal.load(proposal)
 
-  if(quadratics == null) quadratics = new QuadraticTotals(proposal)
+  if(quadratics == null) quadratics = new QuadraticTotal(proposal)
 
   let burners = quadratics.burners as Array<string>
   let rejectSqrt = BigInt.fromI32(0)
@@ -53,7 +53,6 @@ function getQuadraticTotals(proposal: string, hash: string): void {
     }
   }
 
-  quadratics.proposal = proposal
   quadratics.decline = rejectSqrt
   quadratics.approve = passSqrt
   quadratics.total = totalValue
