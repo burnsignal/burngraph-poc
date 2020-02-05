@@ -28,12 +28,14 @@ type Signaller @entity {
 type Proposal @entity {
   id: ID! # AnonymousDeposit.proposal
   burns: [String!] # transactionHashes
+  approve: Option!
+  decline: Option!
   sum: BigInt!
 }
 
 type Option @entity {
   id: ID! # AnonymousDeposit.proposal + @type
-  signallers: [Bytes!] # Addresses
-  contributions: [BigInt!]
-  quadratics: [String!]
+  signallers: [Bytes!]! # Addresses
+  contributions: [BigInt!]!
+  quadratics: [String!]!
 }

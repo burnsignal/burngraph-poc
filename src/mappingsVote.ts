@@ -56,33 +56,30 @@ function storeProposal(event: AnonymousDepositEvent): void {
 
   let total: BigInt = event.params.value + proposal.sum
   let burns: string[] = proposal.burns as Array<string>
+  let rejections = proposal.decline as Option
+  let approvals = proposal.approve as Option
+
   if(burns == null) burns = new Array()
+
+  if(event.params.option == "yes") storeOption(approvals, event)
+  else if(event.params.option == "no") storeOption(rejections, event)
 
   burns.push(transactionHash)
 
+  proposal.decline = rejections as string
+  proposal.approve = approvals as string
   proposal.burns = burns
   proposal.sum = total
   proposal.save()
-
-  storeOption(event)
 }
 
-function storeOption(event: AnonymousDepositEvent): void {
-  let optionId: string = event.params.name  + "@" + event.params.option
-  let option = Option.load(optionId)
-
-  if(option == null) option = new Option(optionId)
-
+function storeOption(option: Option, event: AnonymousDepositEvent): void {
   let contributions: BigInt[] = option.contributions as Array<BigInt>
   let quadratics: string[] = option.quadratics as Array<string>
   let signallers: Bytes[] = option.signallers as Array<Bytes>
   let signaller = event.params.from
   let burn = event.params.value
   let parsed = ""
-
-  if(contributions == null) contributions = new Array()
-  if(signallers == null) signallers = new Array()
-  if(quadratics == null) quadratics = new Array()
 
   if(quadratics.length > 0){
     let previous: string = quadratics[quadratics.length-1]
