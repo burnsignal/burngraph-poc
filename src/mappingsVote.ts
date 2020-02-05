@@ -1,5 +1,5 @@
 import { AnonymousDeposit as AnonymousDepositEvent } from "../generated/VoteProposalPool/templates/VoteOption/VoteOption"
-import { AnonymousDeposit, Proposal, Signaller } from "../generated/schema"
+import { AnonymousDeposit, Proposal, Signaller, Option } from "../generated/schema"
 import { BigInt, BigDecimal } from "@graphprotocol/graph-ts"
 
 function legacyNumber(number: BigInt): number {
@@ -24,12 +24,13 @@ export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
 
 function storeSignallerMetadata(event: AnonymousDepositEvent): void {
   let transactionHash = event.transaction.hash.toHex()
-  let signaller = Signaller.load(event.params.from)
+  let address = event.params.from.toHexString()
+  let signaller = Signaller.load(address)
 
-  if(signaller == null) signaller = new Signaller(event.params.from)
+  if(signaller == null) signaller = new Signaller(address)
 
   let total: BigInt = signaller.burned + event.params.value
-  let burns: string[] = signaller.burns
+  let burns: string[] = signaller.burns as Array<string>
 
   if(burns == null) burns = new Array()
 
@@ -47,30 +48,32 @@ function storeProposal(event: AnonymousDepositEvent): void {
 
   if(proposal == null) proposal = new Proposal(proposalId)
 
-  let burns :string[] = proposal.burn as Array<string>
-  let rejections: Option = proposal.reject
-  let approvals: Option = proposal.approve
+  let burns :string[] = proposal.burns as Array<string>
+  let rejections = proposal.reject as Option
+  let approvals = proposal.approve as Option
 
   if(rejections == null) rejections = new Option(`${proposalId}@no`)
   if(approvals == null) approvals = new Option(`${proposalId}@yes`)
-  if(burners == null) burners = new Array()
+  if(burns == null) burns = new Array()
 
-  if(event.params.choice == "no") storeOption(rejections, event)
-  else if(event.params.choice == "yes") storeOption(approvals, event)
+  if(event.params.option == "no") storeOption(rejections, event)
+  else if(event.params.option == "yes") storeOption(approvals, event)
+
+  burns.push(transactionHash)
 
   proposal.sum = event.params.value + proposal.sum
-  proposal.reject = rejections
-  proposal.approve = approvals
+  proposal.reject = rejections as string
+  proposal.approve = approvals as string
   proposal.burns = burns
   proposal.save()
 }
 
 function storeOption(option: Option, event: AnonymousDepositEvent): void {
+  let quadratics: string[] = option.quadratics as Array<string>
   let contributions = option.contributions
-  let quadratics = option.quadratics
-  let signallers = option.signallers
   let burn: BigInt = event.params.value
-  let signaller: Bytes = event.params.from
+  let signallers = option.signallers
+  let signaller = event.params.from
   let parsed: string = ""
 
   if(quadratics.length > 0){
