@@ -35,7 +35,7 @@ type Proposal @entity {
 
 type Option @entity {
   id: ID! # AnonymousDeposit.proposal + @type
-  signallers: [Bytes!]! # Addresses
-  contributions: [BigInt!]!
-  quadratics: [String!]!
+  signallers: [Bytes!] # Addresses
+  contributions: [BigInt!]
+  quadratics: [String!]
 }
