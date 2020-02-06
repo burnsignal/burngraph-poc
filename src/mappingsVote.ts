@@ -1,41 +1,29 @@
-import { AnonymousDeposit as AnonymousDepositEvent } from "../generated/VoteProposalPool/templates/VoteOption/VoteOption"
-import { AnonymousDeposit, Proposal, Signaller, Option } from "../generated/schema"
-import { BigInt, BigDecimal, Bytes } from "@graphprotocol/graph-ts"
+import { Deposit as DepositEvent } from "../generated/VoteProposalPool/templates/VoteOption/VoteOption"
+import { Deposit, Poll, User, Option, Yes, No } from "../generated/schema"
+import { initialiseUser, legacyNumber } from "./operations.ts"
+import { BigInt, Bytes } from "@graphprotocol/graph-ts"
 
-function legacyNumber(number: BigInt): number {
-  let decimal = new BigDecimal(number)
-  return parseFloat(number.toString())
-}
-
-export function handleAnonymousDeposit(event: AnonymousDepositEvent): void {
+export function handleDeposit(event: DepositEvent): void {
   let transactionHash = event.transaction.hash.toHex()
-  let entity = new AnonymousDeposit(transactionHash)
+  let entity = new Deposit(transactionHash)
 
   entity.timestamp = event.block.timestamp
-  entity.signaller = event.params.from
-  entity.proposal = event.params.name
-  entity.choice = event.params.option
+  entity.option = event.params.option
   entity.value = event.params.value
+  entity.user = event.params.from
+  entity.poll = event.params.name
   entity.save()
 
-  storeSignallerMetadata(event)
-  storeProposal(event)
+  storeUserMetadata(event)
+  storePoll(event)
 }
 
-function storeSignallerMetadata(event: AnonymousDepositEvent): void {
+function storeUserMetadata(event: DepositEvent): void {
   let transactionHash = event.transaction.hash.toHex()
   let address = event.params.from.toHexString()
-  let signaller = Signaller.load(address)
-
-  if(signaller == null){
-    signaller = new Signaller(address)
-    signaller.burned = BigInt.fromI32(0)
-  }
-
-  let total: BigInt = signaller.burned + event.params.value
-  let burns: string[] = signaller.burns as Array<string>
-
-  if(burns == null) burns = new Array()
+  let user = initialiseUser(address)
+  let total = user.burned + event.params.value
+  let burns = user.burns as Array<string>
 
   burns.push(transactionHash)
 
@@ -44,54 +32,51 @@ function storeSignallerMetadata(event: AnonymousDepositEvent): void {
   signaller.save()
 }
 
-function storeProposal(event: AnonymousDepositEvent): void {
-  let proposalId = event.params.name
+function storePoll(event: DepositEvent): void {
   let transactionHash = event.transaction.hash.toHex()
-  let proposal = Proposal.load(proposalId)
+  let address = event.params.from.toHexString()
+  let poll = initialisePoll(event.params.name)
+  let users = poll.users
+  let yes = poll.yes
+  let no = poll.no
 
-  if(proposal == null){
-    proposal = new Proposal(proposalId)
-    proposal.sum = BigInt.fromI32(0)
-    proposal.decline = "NA"
-    proposal.approve = "NA"
-  }
+  if(event.params.option == "yes") yes = yes + event.params.value
+  else if(event.params.option == "no") no = no + event.params.value
+  if(!checkValidity(users, address)) users.push(address)
 
-  let optionId: string = event.params.name  + "@" + event.params.option
-  let total: BigInt = event.params.value + proposal.sum
-  let burns: string[] = proposal.burns as Array<string>
-  let rejections: string = proposal.decline
-  let approvals: string = proposal.approve
+  storeOption(event)
 
-  if(burns == null) burns = new Array()
-
-  if(event.params.option == "yes") approvals = optionId
-  else if(event.params.option == "no") rejections = optionId
-
-  storeOption(optionId, event)
-  burns.push(transactionHash)
-
-  proposal.decline = rejections
-  proposal.approve = approvals
-  proposal.burns = burns
-  proposal.sum = total
-  proposal.save()
+  poll.users = users
+  poll.yes = yes
+  poll.no = no
+  poll.save()
 }
 
-function storeOption(id: string, event: AnonymousDepositEvent): void {
-  let option = Option.load(id)
+function storeOption(event: DepositEvent): void {
+  let address = event.params.from.toHexString()
+  let optionId = address + "@" + event.params.name
+  let user = initialiseUsers(address)
+  let type = event.params.option
 
-  if(option == null) option = new Option(id)
+  let option = type == "yes" ? Yes.load(optionId) : No.load(optionId)
 
-  let contributions: BigInt[] = option.contributions as Array<BigInt>
-  let quadratics: string[] = option.quadratics as Array<string>
-  let signallers: Bytes[] = option.signallers as Array<Bytes>
-  let signaller = event.params.from
+  if(option == null){
+     if(type == "yes") option = new Yes(optionId)
+     else if(type == "no") option = new No(optionId)
+
+     option.contributions = new Array<BigInt>()
+     option.timestamps = new Array<BigInt>()
+     option.quadratics = new Array<string>()
+     option.total = new Array<BigInt>()
+     option.value = new Array<BigInt>()
+  }
+
+  let contributions = option.contributions
+  let quadratics = option.quadratics
+  let timestamps = option.timestamps
   let burn = event.params.value
-  let parsed = ""
-
-  if(contributions == null) contributions = new Array()
-  if(signallers == null) signallers = new Array()
-  if(quadratics == null) quadratics = new Array()
+  let total = option.total
+  let value = option.value
 
   if(quadratics.length > 0){
     let previous: string = quadratics[quadratics.length-1]
@@ -110,4 +95,31 @@ function storeOption(id: string, event: AnonymousDepositEvent): void {
   option.signallers = signallers
   option.quadratics = quadratics
   option.save()
+}
+
+function checkValidity(array: Array<string>, address: string): bool {
+  for(let x = 0; x < array.length){
+    if(array[x] == address) return true
+  } return false
+}
+
+function initialisePoll(title: string): Poll {
+  let poll = Poll.load(title)
+
+  if(poll == null){
+    poll = new poll(title)
+    proposal.users = new Array<string>()
+    poll.yes = BigInt.fromI32(0)
+    poll.no = BigInt.fromI32(0)
+  } return poll
+}
+
+function initialiseUsers(address: string): Users {
+  let users = Users.load(address)
+
+  if(users == null){
+    users = new Users(address)
+    users.yes = "NA"
+    users.no =  "NA"
+  } return users
 }

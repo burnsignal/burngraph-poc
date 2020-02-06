@@ -1,14 +1,15 @@
-import { newProposalIssued as newProposalIssuedEvent} from "../generated/VoteProposalPool/VoteProposalPool"
+import { Issue as IssueEvent} from "../generated/VoteProposalPool/VoteProposalPool"
 import { VoteOption } from "../generated/VoteProposalPool/templates"
-import { newProposalIssued } from "../generated/schema"
+import { Issue, User } from "../generated/schema"
 import { Address } from "@graphprotocol/graph-ts";
+import { initialiseUser } from "./operations.ts"
 
-export function handleFundsSent(event: newProposalIssuedEvent): void {
+export function handleIssue(event: IssueEvent): void {
   let entity = new newProposalIssued(event.transaction.hash.toHex())
   entity.issuer  = event.params.issuer
   entity.deadline = event.params.deadline
-  entity.name = event.params.name
-  entity.data = event.params.data
+  entity.title = event.params.name
+  entity.body = event.params.data
   entity.optionA = event.params.optionA
   entity.optionAaddr = event.params.optionAaddr
   entity.optionB = event.params.optionB
@@ -17,4 +18,17 @@ export function handleFundsSent(event: newProposalIssuedEvent): void {
 
   VoteOption.create(entity.optionAaddr as Address)
   VoteOption.create(entity.optionBaddr as Address)
+  storeIssue(event)
+}
+
+function storeIssue(event: IssueEvent): void {
+  let transactionHash = event.transaction.hash.toHex()
+  let address = event.params.from.toHexString()
+  let user = initialiseUser(user)
+  let polls = user.polls
+  
+  polls.push(event.params.name)
+
+  user.polls = polls
+  user.save()
 }
