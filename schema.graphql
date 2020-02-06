@@ -1,7 +1,7 @@
-type newProposalIssued @entity {
+type Issue @entity {
   id: ID! # transactionHash
-  name: String!
-  data: String!
+  title: String!
+  body: String!
   issuer: Bytes!
   optionA: String!
   optionB: String!
@@ -10,32 +10,49 @@ type newProposalIssued @entity {
   optionBaddr: Bytes!
 }
 
-type AnonymousDeposit @entity {
+type Deposit @entity {
   id: ID! # transactionHash
-  signaller: Bytes! # Address
+  user: Bytes! # Address
   timestamp: BigInt!
-  proposal: String!
-  choice: String!
+  option: String!
   value: BigInt!
+  poll: String!
 }
 
-type Signaller @entity {
+type User @entity {
   id: ID! # Address
-  burns: [String!] # transactionHashes
+  burns: [String!]! # transactionHashes
+  polls: [Poll!]!
   burned: BigInt!
 }
 
-type Proposal @entity {
-  id: ID! # AnonymousDeposit.proposal
-  burns: [String!] # transactionHashes
-  approve: Option
-  decline: Option
-  sum: BigInt!
+type Poll @entity {
+  id: ID! # Deposit.poll
+  users: [Users!]!
+  yes: BigInt!
+  no: BigInt!
 }
 
-type Option @entity {
-  id: ID! # AnonymousDeposit.proposal + @type
-  signallers: [Bytes!] # Addresses
-  contributions: [BigInt!]
+type Users @entity {
+  id: ID! # Address
+  yes: Yes!
+  no: No!
+}
+
+type Yes @entity {
+  id: ID! # Address
+  contributions: [String!] # transactionHashes
+  timestamps: [BigInt!]
   quadratics: [String!]
+  value: [BigInt!]
+  total: [BigInt!]
+}
+
+type No @entity {
+  id: ID! # Address
+  contributions: [String!] # transactionHashes
+  timestamps: [BigInt!]
+  quadratics: [String!]
+  value: [BigInt!]
+  total: [BigInt!]
 }
