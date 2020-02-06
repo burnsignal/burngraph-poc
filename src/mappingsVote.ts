@@ -51,79 +51,90 @@ function storePoll(event: DepositEvent): void {
 }
 
 function storeOption(event: DepositEvent): void {
-  let transactionHash = event.transaction.hash.toHex()
   let address = event.params.from.toHexString()
   let optionId = address + "@" + event.params.name
   let user = initialiseUsers(address)
   let type = event.params.option
-  let option = Yes.load(optionId)
-  let yes = Yes.load(optionId)
-  let no = No.load(optionId)
+  let yes = initaliseYes(optionId)
+  let no = initaliseNo(optionId)
 
-  if(yes == null){
-     yes = new Yes(optionId)
-     yes.contributions = new Array<string>()
-     yes.timestamps = new Array<BigInt>()
-     yes.value = new Array<BigInt>()
-     yes.total = new Array<string>()
-     yes.sqrt = new Array<string>()
-  } if(no == null){
-     no = new No(optionId)
-     no.contributions = new Array<string>()
-     no.timestamps = new Array<BigInt>()
-     no.value = new Array<BigInt>()
-     no.total = new Array<string>()
-     no.sqrt = new Array<string>()
-  }
+  storeYes(event, yes as Yes)
+  storeNo(event, no as No)
 
-  if(type == "yes") let option = yes
-  else if(type == "no") let option = no
+  user.yes = optionId
+  user.no = optionId
+  user.save()
+}
 
-  let total = option.total as Array<string>
-  let sqrt = option.sqrt as Array<string>
-  let contributions = option.contributions
+function storeNo(event: DepositEvent, no: No): void {
+  let transactionHash = event.transaction.hash.toHex()
   let timestamp = event.block.timestamp
-  let timestamps = option.timestamps
+  let contributions = no.contributions
+  let total = no.total as Array<string>
+  let sqrt = no.sqrt as Array<string>
+  let timestamps = no.timestamps
   let burn = event.params.value
-  let value = option.value
+  let value = no.value
+
+  let running = computeRunning(burn, total, sqrt)
+
+  contributions.push(transactionHash)
+  timestamps.push(timestamp)
+  total.push(running[0])
+  sqrt.push(running[1])
+  value.push(burn)
+
+  no.contributions = contributions
+  no.timestamps = timestamps
+  no.value = value
+  no.total = total
+  no.sqrt = sqrt
+  no.save()
+}
+
+function storeYes(event: DepositEvent, yes: Yes): void {
+  let transactionHash = event.transaction.hash.toHex()
+  let timestamp = event.block.timestamp
+  let contributions = yes.contributions
+  let total = yes.total as Array<string>
+  let sqrt = yes.sqrt as Array<string>
+  let timestamps = yes.timestamps
+  let burn = event.params.value
+  let value = yes.value
+
+  let running = computeRunning(burn, total, sqrt)
+
+  contributions.push(transactionHash)
+  timestamps.push(timestamp)
+  total.push(running[0])
+  sqrt.push(running[1])
+  value.push(burn)
+
+  yes.contributions = contributions
+  yes.timestamps = timestamps
+  yes.value = value
+  yes.total = total
+  yes.sqrt = sqrt
+  yes.save()
+}
+
+function computeRunning(number: BigInt, total: Array<string>, sqrt: Array<string>): Array<string> {
   let root = ""
   let sum = ""
 
   if(sqrt.length > 0 || total.length > 0){
     let preceding = total[total.length-1]
     let previous = sqrt[sqrt.length-1]
-    let quad = Math.sqrt(parseFloat(previous) + legacyNumber(burn))
-    let gross = parseFloat(preceding) + legacyNumber(burn)
+    let quad = Math.sqrt(parseFloat(previous) + legacyNumber(number))
+    let gross = parseFloat(preceding) + legacyNumber(number)
     root = quad.toString()
     sum = gross.toString()
   } else {
-    let rudimentary = Math.sqrt(legacyNumber(burn))
-    let foundation = legacyNumber(burn)
+    let rudimentary = Math.sqrt(legacyNumber(number))
+    let foundation = legacyNumber(number)
     root = rudimentary.toString()
     sum = foundation.toString()
-  }
-
-  contributions.push(transactionHash)
-  timestamps.push(timestamp)
-  value.push(burn)
-  total.push(sum)
-  sqrt.push(root)
-
-  option.contributions = contributions
-  option.timestamps = timestamps
-  option.value = value
-  option.total = total
-  option.sqrt = sqrt
-
-  if(type == "yes") let yes = option
-  else if(type == "no") let no = option
-
-  yes.save()
-  no.save()
-
-  user.yes = optionId
-  user.no = optionId
-  user.save()
+  } return [ sum, root ]
 }
 
 function checkValidity(array: Array<string>, address: string): bool {
@@ -141,6 +152,32 @@ function initialisePoll(title: string): Poll {
     poll.yes = BigInt.fromI32(0)
     poll.no = BigInt.fromI32(0)
   } return poll as Poll
+}
+
+function initaliseYes(id: string): Yes {
+  let yes = Yes.load(id)
+
+  if(yes == null){
+     yes = new Yes(id)
+     yes.contributions = new Array<string>()
+     yes.timestamps = new Array<BigInt>()
+     yes.value = new Array<BigInt>()
+     yes.total = new Array<string>()
+     yes.sqrt = new Array<string>()
+  } return yes as Yes
+}
+
+function initaliseNo(id: string): No {
+  let no = No.load(id)
+
+  if(no == null){
+     no = new No(id)
+     no.contributions = new Array<string>()
+     no.timestamps = new Array<BigInt>()
+     no.value = new Array<BigInt>()
+     no.total = new Array<string>()
+     no.sqrt = new Array<string>()
+  } return no as No
 }
 
 function initialiseUsers(address: string): Users {
