@@ -1,11 +1,10 @@
-import { Issue as IssueEvent} from "../generated/VoteProposalPool/VoteProposalPool"
+import { newProposalIssued as IssueEvent } from "../generated/VoteProposalPool/VoteProposalPool"
 import { VoteOption } from "../generated/VoteProposalPool/templates"
+import { Address, BigInt } from "@graphprotocol/graph-ts";
 import { Issue, User } from "../generated/schema"
-import { Address } from "@graphprotocol/graph-ts";
-import { initialiseUser } from "./operations.ts"
 
 export function handleIssue(event: IssueEvent): void {
-  let entity = new newProposalIssued(event.transaction.hash.toHex())
+  let entity = new Issue(event.transaction.hash.toHex())
   entity.issuer  = event.params.issuer
   entity.deadline = event.params.deadline
   entity.title = event.params.name
@@ -23,12 +22,23 @@ export function handleIssue(event: IssueEvent): void {
 
 function storeIssue(event: IssueEvent): void {
   let transactionHash = event.transaction.hash.toHex()
-  let address = event.params.from.toHexString()
-  let user = initialiseUser(user)
+  let address = event.transaction.from.toHexString()
+  let user = initialiseUser(address)
   let polls = user.polls
-  
+
   polls.push(event.params.name)
 
   user.polls = polls
   user.save()
+}
+
+export function initialiseUser(address: string): User {
+  let user = User.load(address)
+
+  if(user == null){
+    user = new User(address)
+    user.burns = new Array<string>()
+    user.polls = new Array<string>()
+    user.burned = BigInt.fromI32(0)
+  } return user as User
 }

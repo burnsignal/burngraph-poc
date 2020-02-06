@@ -1,7 +1,6 @@
-import { Deposit as DepositEvent } from "../generated/VoteProposalPool/templates/VoteOption/VoteOption"
-import { Deposit, Poll, User, Option, Yes, No } from "../generated/schema"
-import { initialiseUser, legacyNumber } from "./operations.ts"
-import { BigInt, Bytes } from "@graphprotocol/graph-ts"
+import { AnonymousDeposit as DepositEvent } from "../generated/VoteProposalPool/templates/VoteOption/VoteOption"
+import { Deposit, Poll, Users, User, Yes, No } from "../generated/schema"
+import { BigInt, Bytes, BigDecimal } from "@graphprotocol/graph-ts"
 
 export function handleDeposit(event: DepositEvent): void {
   let transactionHash = event.transaction.hash.toHex()
@@ -27,9 +26,9 @@ function storeUserMetadata(event: DepositEvent): void {
 
   burns.push(transactionHash)
 
-  signaller.burned = total
-  signaller.burns = burns
-  signaller.save()
+  user.burned = total
+  user.burns = burns
+  user.save()
 }
 
 function storePoll(event: DepositEvent): void {
@@ -55,38 +54,39 @@ function storeOption(event: DepositEvent): void {
   let transactionHash = event.transaction.hash.toHex()
   let address = event.params.from.toHexString()
   let optionId = address + "@" + event.params.name
-  let burn = legacyNumber(event.params.value)
   let user = initialiseUsers(address)
   let type = event.params.option
+  let option: Yes
 
-  let option = type == "yes" ? Yes.load(optionId) : No.load(optionId)
+  if(type == "yes") let option = Yes.load(optionId)
+  else if(type == "no") let option = No.load(optionId)
 
   if(option == null){
-     if(type == "yes") option = new Yes(optionId)
-     else if(type == "no") option = new No(optionId)
+     if(type == "yes") let option = new Yes(optionId)
+     else if(type == "no") let option = new No(optionId)
 
-     option.contributions = new Array<BigInt>()
+     option.contributions = new Array<string>()
      option.timestamps = new Array<BigInt>()
      option.value = new Array<BigInt>()
      option.total = new Array<string>()
      option.sqrt = new Array<string>()
   }
 
+  let total = option.total as Array<string>
+  let sqrt = option.sqrt as Array<string>
   let contributions = option.contributions
   let timestamp = event.block.timestamp
   let timestamps = option.timestamps
   let burn = event.params.value
-  let total = option.total
   let value = option.value
-  let sqrt = option.sqrt
   let root = ""
   let sum = ""
 
-  if(quadratics.length > 0){
-    let previous = quadratics[quadratics.length-1]
+  if(sqrt.length > 0 || total.length > 0){
     let preceding = total[total.length-1]
+    let previous = sqrt[sqrt.length-1]
     let quad = Math.sqrt(parseFloat(previous) + legacyNumber(burn))
-    let gross = preceding + burn
+    let gross = parseFloat(preceding) + legacyNumber(burn)
     root = quad.toString()
     sum = gross.toString()
   } else {
@@ -109,14 +109,14 @@ function storeOption(event: DepositEvent): void {
   option.sqrt = sqrt
   option.save()
 
-  if(type == "yes") user.yes = option
-  else if(type == "no") user.no = option
+  if(type == "yes") user.yes = optionId
+  else if(type == "no") user.no = optionId
 
-  user.save()  
+  user.save()
 }
 
 function checkValidity(array: Array<string>, address: string): bool {
-  for(let x = 0; x < array.length){
+  for(let x = 0; x < array.length; x++){
     if(array[x] == address) return true
   } return false
 }
@@ -125,11 +125,11 @@ function initialisePoll(title: string): Poll {
   let poll = Poll.load(title)
 
   if(poll == null){
-    poll = new poll(title)
-    proposal.users = new Array<string>()
+    poll = new Poll(title)
+    poll.users = new Array<string>()
     poll.yes = BigInt.fromI32(0)
     poll.no = BigInt.fromI32(0)
-  } return poll
+  } return poll as Poll
 }
 
 function initialiseUsers(address: string): Users {
@@ -139,5 +139,21 @@ function initialiseUsers(address: string): Users {
     users = new Users(address)
     users.yes = "NA"
     users.no =  "NA"
-  } return users
+  } return users as Users
+}
+
+export function initialiseUser(address: string): User {
+  let user = User.load(address)
+
+  if(user == null){
+    user = new User(address)
+    user.burns = new Array<string>()
+    user.polls = new Array<string>()
+    user.burned = BigInt.fromI32(0)
+  } return user as User
+}
+
+export function legacyNumber(number: BigInt): number {
+  let decimal = new BigDecimal(number)
+  return parseFloat(number.toString())
 }
