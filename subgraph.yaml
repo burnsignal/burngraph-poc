@@ -20,7 +20,7 @@ dataSources:
           file: ./abis/VoteProposalPool.json
       eventHandlers:
         - event: newProposalIssued(address,uint256,string,string,string,address,string,address)
-          handler: handleFundsSent
+          handler: handleIssue
       file: ./src/mapping.ts
 templates:
   - name: VoteOption

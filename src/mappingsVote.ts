@@ -56,21 +56,28 @@ function storeOption(event: DepositEvent): void {
   let optionId = address + "@" + event.params.name
   let user = initialiseUsers(address)
   let type = event.params.option
-  let option: Yes
+  let option = Yes.load(optionId)
+  let yes = Yes.load(optionId)
+  let no = No.load(optionId)
 
-  if(type == "yes") let option = Yes.load(optionId)
-  else if(type == "no") let option = No.load(optionId)
-
-  if(option == null){
-     if(type == "yes") let option = new Yes(optionId)
-     else if(type == "no") let option = new No(optionId)
-
-     option.contributions = new Array<string>()
-     option.timestamps = new Array<BigInt>()
-     option.value = new Array<BigInt>()
-     option.total = new Array<string>()
-     option.sqrt = new Array<string>()
+  if(yes == null){
+     yes = new Yes(optionId)
+     yes.contributions = new Array<string>()
+     yes.timestamps = new Array<BigInt>()
+     yes.value = new Array<BigInt>()
+     yes.total = new Array<string>()
+     yes.sqrt = new Array<string>()
+  } if(no == null){
+     no = new No(optionId)
+     no.contributions = new Array<string>()
+     no.timestamps = new Array<BigInt>()
+     no.value = new Array<BigInt>()
+     no.total = new Array<string>()
+     no.sqrt = new Array<string>()
   }
+
+  if(type == "yes") let option = yes
+  else if(type == "no") let option = no
 
   let total = option.total as Array<string>
   let sqrt = option.sqrt as Array<string>
@@ -107,11 +114,15 @@ function storeOption(event: DepositEvent): void {
   option.value = value
   option.total = total
   option.sqrt = sqrt
-  option.save()
 
-  if(type == "yes") user.yes = optionId
-  else if(type == "no") user.no = optionId
+  if(type == "yes") let yes = option
+  else if(type == "no") let no = option
 
+  yes.save()
+  no.save()
+
+  user.yes = optionId
+  user.no = optionId
   user.save()
 }
 
