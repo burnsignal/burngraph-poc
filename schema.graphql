@@ -52,7 +52,7 @@ type No @entity {
   id: ID! # Address@Deposit.poll
   contributions: [String!] # transactionHashes
   timestamps: [BigInt!]
-  quadratics: [String!]
   value: [BigInt!]
-  total: [BigInt!]
+  total: [String!]
+  sqrt: [String!]
 }

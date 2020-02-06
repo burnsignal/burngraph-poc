@@ -33,7 +33,6 @@ function storeUserMetadata(event: DepositEvent): void {
 }
 
 function storePoll(event: DepositEvent): void {
-  let transactionHash = event.transaction.hash.toHex()
   let address = event.params.from.toHexString()
   let poll = initialisePoll(event.params.name)
   let users = poll.users
@@ -53,8 +52,10 @@ function storePoll(event: DepositEvent): void {
 }
 
 function storeOption(event: DepositEvent): void {
+  let transactionHash = event.transaction.hash.toHex()
   let address = event.params.from.toHexString()
   let optionId = address + "@" + event.params.name
+  let burn = legacyNumber(event.params.value)
   let user = initialiseUsers(address)
   let type = event.params.option
 
@@ -66,35 +67,52 @@ function storeOption(event: DepositEvent): void {
 
      option.contributions = new Array<BigInt>()
      option.timestamps = new Array<BigInt>()
-     option.quadratics = new Array<string>()
-     option.total = new Array<BigInt>()
      option.value = new Array<BigInt>()
+     option.total = new Array<string>()
+     option.sqrt = new Array<string>()
   }
 
   let contributions = option.contributions
-  let quadratics = option.quadratics
+  let timestamp = event.block.timestamp
   let timestamps = option.timestamps
   let burn = event.params.value
   let total = option.total
   let value = option.value
+  let sqrt = option.sqrt
+  let root = ""
+  let sum = ""
 
   if(quadratics.length > 0){
-    let previous: string = quadratics[quadratics.length-1]
-    let quad: number = Math.sqrt(parseFloat(previous) + legacyNumber(burn))
-    parsed = quad.toString()
+    let previous = quadratics[quadratics.length-1]
+    let preceding = total[total.length-1]
+    let quad = Math.sqrt(parseFloat(previous) + legacyNumber(burn))
+    let gross = preceding + burn
+    root = quad.toString()
+    sum = gross.toString()
   } else {
-    let neophyte: number = Math.sqrt(legacyNumber(burn))
-    parsed = neophyte.toString()
+    let rudimentary = Math.sqrt(legacyNumber(burn))
+    let foundation = legacyNumber(burn)
+    root = rudimentary.toString()
+    sum = foundation.toString()
   }
 
-  signallers.push(signaller)
-  contributions.push(burn)
-  quadratics.push(parsed)
+  contributions.push(transactionHash)
+  timestamps.push(timestamp)
+  value.push(burn)
+  total.push(sum)
+  sqrt.push(root)
 
   option.contributions = contributions
-  option.signallers = signallers
-  option.quadratics = quadratics
+  option.timestamps = timestamps
+  option.value = value
+  option.total = total
+  option.sqrt = sqrt
   option.save()
+
+  if(type == "yes") user.yes = option
+  else if(type == "no") user.no = option
+
+  user.save()  
 }
 
 function checkValidity(array: Array<string>, address: string): bool {
