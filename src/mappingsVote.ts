@@ -34,13 +34,14 @@ function storeUserMetadata(event: DepositEvent): void {
 function storePoll(event: DepositEvent): void {
   let address = event.params.from.toHexString()
   let poll = initialisePoll(event.params.name)
+  let userId = address + "@" + event.params.name
   let users = poll.users
   let yes = poll.yes
   let no = poll.no
 
   if(event.params.option == "yes") yes = yes + event.params.value
   else if(event.params.option == "no") no = no + event.params.value
-  if(!checkValidity(users, address)) users.push(address)
+  if(!checkValidity(users, userId)) users.push(userId)
 
   storeOption(event)
 
@@ -52,17 +53,16 @@ function storePoll(event: DepositEvent): void {
 
 function storeOption(event: DepositEvent): void {
   let address = event.params.from.toHexString()
-  let optionId = address + "@" + event.params.name
-  let user = initialiseUsers(address)
-  let type = event.params.option
-  let yes = initaliseYes(optionId)
-  let no = initaliseNo(optionId)
+  let userId = address + "@" + event.params.name
+  let yes = initaliseYes(userId + "@yes")
+  let no = initaliseNo(userId + "@no")
+  let user = initialiseUsers(userId)
 
   storeYes(event, yes as Yes)
   storeNo(event, no as No)
 
-  user.yes = optionId
-  user.no = optionId
+  user.yes = userId + "@yes"
+  user.no = userId + "@no"
   user.save()
 }
 
@@ -76,13 +76,15 @@ function storeNo(event: DepositEvent, no: No): void {
   let burn = event.params.value
   let value = no.value
 
-  let running = computeRunning(burn, total, sqrt)
+  if(event.params.option == "no") {
+    let running = computeRunning(burn, total, sqrt)
 
-  contributions.push(transactionHash)
-  timestamps.push(timestamp)
-  total.push(running[0])
-  sqrt.push(running[1])
-  value.push(burn)
+    contributions.push(transactionHash)
+    timestamps.push(timestamp)
+    total.push(running[0])
+    sqrt.push(running[1])
+    value.push(burn)
+  }
 
   no.contributions = contributions
   no.timestamps = timestamps
@@ -102,13 +104,15 @@ function storeYes(event: DepositEvent, yes: Yes): void {
   let burn = event.params.value
   let value = yes.value
 
-  let running = computeRunning(burn, total, sqrt)
+  if(event.params.option == "yes") {
+    let running = computeRunning(burn, total, sqrt)
 
-  contributions.push(transactionHash)
-  timestamps.push(timestamp)
-  total.push(running[0])
-  sqrt.push(running[1])
-  value.push(burn)
+    contributions.push(transactionHash)
+    timestamps.push(timestamp)
+    total.push(running[0])
+    sqrt.push(running[1])
+    value.push(burn)
+  }
 
   yes.contributions = contributions
   yes.timestamps = timestamps
@@ -180,11 +184,11 @@ function initaliseNo(id: string): No {
   } return no as No
 }
 
-function initialiseUsers(address: string): Users {
-  let users = Users.load(address)
+function initialiseUsers(id: string): Users {
+  let users = Users.load(id)
 
   if(users == null){
-    users = new Users(address)
+    users = new Users(id)
     users.yes = "NA"
     users.no =  "NA"
   } return users as Users
