@@ -7,7 +7,7 @@ dataSources:
     name: VoteProposalPool
     network: rinkeby
     source:
-      address: "0x6936b81d7629378aabddcf882b2a7fdfff1cd962"
+      address: "0x61a8598eabb7bddca95d3783c228878cd788e0a9"
       abi: VoteProposalPool
     mapping:
       kind: ethereum/events
@@ -19,7 +19,7 @@ dataSources:
         - name: VoteProposalPool
           file: ./abis/VoteProposalPool.json
       eventHandlers:
-        - event: newProposalIssued(address,uint256,string,string,string,address,string,address)
+        - event: newProposalIssued(address,address,uint256,string,string,string,address,string,address)
           handler: handleIssue
       file: ./src/mapping.ts
 templates:

@@ -3,6 +3,7 @@ type Issue @entity {
   title: String!
   body: String!
   issuer: Bytes!
+  poll: Bytes!
   optionA: String!
   optionB: String!
   deadline: BigInt!
@@ -34,22 +35,14 @@ type Poll @entity {
 }
 
 type Users @entity {
-  id: ID! # Address
-  yes: Yes!
-  no: No!
+  id: ID! # Address@Deposit.poll
+  address: Bytes! # Address
+  yes: Option!
+  no: Option!
 }
 
-type Yes @entity {
-  id: ID! # Address@Deposit.poll
-  contributions: [String!] # transactionHashes
-  timestamps: [BigInt!]
-  value: [BigInt!]
-  total: [String!]
-  sqrt: [String!]
-}
-
-type No @entity {
-  id: ID! # Address@Deposit.poll
+type Option @entity {
+  id: ID! # Address@Deposit.poll@Deposit.option
   contributions: [String!] # transactionHashes
   timestamps: [BigInt!]
   value: [BigInt!]

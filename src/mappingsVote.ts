@@ -1,5 +1,5 @@
 import { AnonymousDeposit as DepositEvent } from "../generated/VoteProposalPool/templates/VoteOption/VoteOption"
-import { Deposit, Poll, Users, User, Yes, No } from "../generated/schema"
+import { Deposit, Poll, Users, User, Option } from "../generated/schema"
 import { BigInt, Bytes, BigDecimal } from "@graphprotocol/graph-ts"
 
 export function handleDeposit(event: DepositEvent): void {
@@ -54,29 +54,29 @@ function storePoll(event: DepositEvent): void {
 function storeOption(event: DepositEvent): void {
   let address = event.params.from.toHexString()
   let userId = address + "@" + event.params.name
-  let yes = initaliseYes(userId + "@yes")
-  let no = initaliseNo(userId + "@no")
-  let user = initialiseUsers(userId)
+  let yes = initaliseOption(userId + "@yes")
+  let no = initaliseOption(userId + "@no")
+  let user = initialiseUsers(event)
 
-  storeYes(event, yes as Yes)
-  storeNo(event, no as No)
+  embedOption(event, no as Option, "no")
+  embedOption(event, yes as Option, "yes")
 
   user.yes = userId + "@yes"
   user.no = userId + "@no"
   user.save()
 }
 
-function storeNo(event: DepositEvent, no: No): void {
+function embedOption(event: DepositEvent, option: Option, type: string): void {
   let transactionHash = event.transaction.hash.toHex()
   let timestamp = event.block.timestamp
-  let contributions = no.contributions
-  let total = no.total as Array<string>
-  let sqrt = no.sqrt as Array<string>
-  let timestamps = no.timestamps
+  let contributions = option.contributions
+  let total = option.total as Array<string>
+  let sqrt = option.sqrt as Array<string>
+  let timestamps = option.timestamps
   let burn = event.params.value
-  let value = no.value
+  let value = option.value
 
-  if(event.params.option == "no") {
+  if(event.params.option == type){
     let running = computeRunning(burn, total, sqrt)
 
     contributions.push(transactionHash)
@@ -86,40 +86,12 @@ function storeNo(event: DepositEvent, no: No): void {
     value.push(burn)
   }
 
-  no.contributions = contributions
-  no.timestamps = timestamps
-  no.value = value
-  no.total = total
-  no.sqrt = sqrt
-  no.save()
-}
-
-function storeYes(event: DepositEvent, yes: Yes): void {
-  let transactionHash = event.transaction.hash.toHex()
-  let timestamp = event.block.timestamp
-  let contributions = yes.contributions
-  let total = yes.total as Array<string>
-  let sqrt = yes.sqrt as Array<string>
-  let timestamps = yes.timestamps
-  let burn = event.params.value
-  let value = yes.value
-
-  if(event.params.option == "yes") {
-    let running = computeRunning(burn, total, sqrt)
-
-    contributions.push(transactionHash)
-    timestamps.push(timestamp)
-    total.push(running[0])
-    sqrt.push(running[1])
-    value.push(burn)
-  }
-
-  yes.contributions = contributions
-  yes.timestamps = timestamps
-  yes.value = value
-  yes.total = total
-  yes.sqrt = sqrt
-  yes.save()
+  option.contributions = contributions
+  option.timestamps = timestamps
+  option.value = value
+  option.total = total
+  option.sqrt = sqrt
+  option.save()
 }
 
 function computeRunning(number: BigInt, total: Array<string>, sqrt: Array<string>): Array<string> {
@@ -158,37 +130,27 @@ function initialisePoll(title: string): Poll {
   } return poll as Poll
 }
 
-function initaliseYes(id: string): Yes {
-  let yes = Yes.load(id)
+function initaliseOption(id: string): Option {
+  let option = Option.load(id)
 
-  if(yes == null){
-     yes = new Yes(id)
-     yes.contributions = new Array<string>()
-     yes.timestamps = new Array<BigInt>()
-     yes.value = new Array<BigInt>()
-     yes.total = new Array<string>()
-     yes.sqrt = new Array<string>()
-  } return yes as Yes
+  if(option == null){
+     option = new Option(id)
+     option.contributions = new Array<string>()
+     option.timestamps = new Array<BigInt>()
+     option.value = new Array<BigInt>()
+     option.total = new Array<string>()
+     option.sqrt = new Array<string>()
+  } return option as Option
 }
 
-function initaliseNo(id: string): No {
-  let no = No.load(id)
-
-  if(no == null){
-     no = new No(id)
-     no.contributions = new Array<string>()
-     no.timestamps = new Array<BigInt>()
-     no.value = new Array<BigInt>()
-     no.total = new Array<string>()
-     no.sqrt = new Array<string>()
-  } return no as No
-}
-
-function initialiseUsers(id: string): Users {
-  let users = Users.load(id)
+function initialiseUsers(event: DepositEvent): Users {
+  let address = event.params.from.toHexString()
+  let userId = address + "@" + event.params.name
+  let users = Users.load(userId)
 
   if(users == null){
-    users = new Users(id)
+    users = new Users(userId)
+    users.address = event.params.from
     users.yes = "NA"
     users.no =  "NA"
   } return users as Users

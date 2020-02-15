@@ -7,6 +7,7 @@ export function handleIssue(event: IssueEvent): void {
   let entity = new Issue(event.transaction.hash.toHex())
   entity.issuer  = event.params.issuer
   entity.deadline = event.params.deadline
+  entity.poll = event.params.proposal
   entity.title = event.params.name
   entity.body = event.params.data
   entity.optionA = event.params.optionA
