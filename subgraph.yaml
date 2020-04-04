@@ -6,7 +6,7 @@ dataSources:
     name: VoteProposalPool
     network: mainnet
     source:
-      address: "0x42e36b2174273c148eb5122eee1ec1aad1c9daa9"
+      address: "0x12aa20de60ef8fdF51b3Bce43bAB5Ca07E0fF54b"
       abi: VoteProposalPool
     mapping:
       kind: ethereum/events
