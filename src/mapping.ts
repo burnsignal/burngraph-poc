@@ -1,5 +1,5 @@
 import { newProposalIssued as IssueEvent } from "../generated/VoteProposalPool/VoteProposalPool"
-import { VoteOption } from "../generated/VoteProposalPool/templates"
+import { VoteOption } from "../generated/templates"
 import { Address, BigInt } from "@graphprotocol/graph-ts";
 import { Issue, User } from "../generated/schema"
 
