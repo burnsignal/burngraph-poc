@@ -1,0 +1,42 @@
+specVersion: 0.0.2
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: VoteProposalPool
+    network: {{network}}
+    source:
+      address: '{{address}}'
+      abi: VoteProposalPool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.3
+      language: wasm/assemblyscript
+      entities:
+        - FundsSent
+      abis:
+        - name: VoteProposalPool
+          file: ./abis/VoteProposalPool.json
+      eventHandlers:
+        - event: newProposalIssued(address,address,uint32,string,string,string,address,string,address)
+          handler: handleIssue
+      file: ./src/mapping.ts
+templates:
+  - name: VoteOption
+    kind: ethereum/contract
+    network: {{network}}
+    source:
+      abi: VoteOption
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.1
+      language: wasm/assemblyscript
+      file: ./src/mappingsVote.ts
+      entities:
+        - VoteOption
+      abis:
+        - name: VoteOption
+          file: ./abis/VoteOption.json
+      eventHandlers:
+        - event: AnonymousDeposit(indexed address,uint256,string,string)
+          handler: handleDeposit
