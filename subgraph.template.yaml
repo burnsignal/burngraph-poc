@@ -38,5 +38,5 @@ templates:
         - name: VoteOption
           file: ./abis/VoteOption.json
       eventHandlers:
-        - event: AnonymousDeposit(indexed address,uint256,string,string)
+        - event: ReceivedDeposit(indexed address,uint256,string,string)
           handler: handleDeposit

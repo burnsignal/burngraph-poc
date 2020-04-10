@@ -1,4 +1,4 @@
-import { AnonymousDeposit as DepositEvent } from "../generated/templates/VoteOption/VoteOption"
+import { ReceivedDeposit as DepositEvent } from "../generated/templates/VoteOption/VoteOption"
 import { Deposit, Poll, Users, User, Option } from "../generated/schema"
 import { BigInt, Bytes, BigDecimal } from "@graphprotocol/graph-ts"
 
